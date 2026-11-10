@@ -21,10 +21,25 @@ class GrammarEngine:
         return all_issues
 
 # Instantiating engine once at module level to keep dictionary loaded in memory
-engine = GrammarEngine(
-    checkers = [
-        SpellingChecker()
-        # Future Developments to be done here (Features)
-        
+class GrammarEngine:
+    def __init__(self):
+        self.checkers = [
+            SpellingChecker(),
+            ArticleChecker(),
         ]
-)
+
+    def analyze(self, text: str) -> list[Issue]:
+        all_issues = []
+        for checker in self.checkers:
+            try:
+                issues = checker.check(text)
+                all_issues.extend(issues)
+            except Exception as e:
+                # Isolate checker failures so one broken checker doesn't crash the API
+                print(f"Checker error: {e}")
+        
+        # Sort by start offset ascending
+        all_issues.sort(key=lambda x: x.start)
+        return all_issues
+
+engine = GrammarEngine()

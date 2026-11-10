@@ -10,12 +10,12 @@ class CheckRequest(BaseModel):
 
 class Issue(BaseModel):
     id:str
-    start:int
-    end:int
+    start:int # UTF-16 code unit offset (JavaScript compatible)
+    end:int   # UTF-16 code unit offset (JavaScript compatible)
     category:Literal["spelling", "grammar", "punctuation", "style"]
     message:str
     replacements: List[str]
-    original : str
+    original: str
 
 class CheckResponse(BaseModel):
     issues: List[Issue] =[]

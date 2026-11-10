@@ -23,4 +23,6 @@ def health_check():
 @app.post("/check", response_model = CheckResponse)
 def check_text(payload: CheckRequest):
     issues = engine.analyze(payload.text)
-    return CheckResponse(issues=issues)
+    # Convert code-point offsets to JS UTF-16 code unit offsets
+    utf16_issues = convert_to_utf16_offsets(payload.text, issues)
+    return CheckResponse(issues=utf16_issues)
