@@ -9,6 +9,10 @@ def _is_vowel_sound(phoneme: str) -> bool:
     return phoneme[-1].isdigit()
 
 class ArticleChecker(Checker):
+
+    name = "articles" # Test failed becuase this is required by the base class
+    priority = 75
+
     def __init__(self):
         self.nlp = spacy.blank("en")
         self.d = cmudict.dict()

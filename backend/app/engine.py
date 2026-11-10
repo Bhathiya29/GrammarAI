@@ -1,45 +1,60 @@
-import logging
-from app.checkers.base import Checker
 from app.checkers.spelling import SpellingChecker
+from app.checkers.articles import ArticleChecker
 from app.schemas import Issue
 
 class GrammarEngine:
-    def __init__(self,checkers:list[Checker]):
-        self.checkers = checkers
-    
-    def analyze(self, text: str) -> list[Issue]:
-        all_issues: list[Issue] = []
-        for checker in self.checkers:
-            try:
-                all_issues.extend(checker.check(text))
-            except Exception as e:
-                logger.error(f"Checker '{checker.name}' failed with error: {e}")
-                continue
-        
-        # Sorting all issues by start position ascending
-        all_issues.sort(key=lambda issue: issue.start)
-        return all_issues
-
-# Instantiating engine once at module level to keep dictionary loaded in memory
-class GrammarEngine:
-    def __init__(self):
-        self.checkers = [
+    def __init__(self, checkers=None):
+        self.checkers = checkers if checkers is not None else [
             SpellingChecker(),
             ArticleChecker(),
         ]
-
+    
     def analyze(self, text: str) -> list[Issue]:
-        all_issues = []
+        all_candidates = []
         for checker in self.checkers:
             try:
                 issues = checker.check(text)
-                all_issues.extend(issues)
+                for issue in issues:
+                    all_candidates.append((issue, checker.priority))
             except Exception as e:
-                # Isolate checker failures so one broken checker doesn't crash the API
-                print(f"Checker error: {e}")
-        
-        # Sort by start offset ascending
-        all_issues.sort(key=lambda x: x.start)
-        return all_issues
+                print(f"Checker error in {getattr(checker, 'name', 'unknown')}: {e}")
+
+        # Sort candidates: highest priority first, then longer span (tiebreaker)
+        all_candidates.sort(key=lambda x: (x[1], x[0].end - x[0].start), reverse=True)
+
+        accepted: list[Issue] = []
+
+        for issue, priority in all_candidates:
+            # Stretch goal: check for identical range merge
+            identical = False
+            for existing in accepted:
+                if existing.start == issue.start and existing.end == issue.end:
+                    seen = set(existing.replacements)
+                    merged_replacements = list(existing.replacements)
+                    for rep in issue.replacements:
+                        if rep not in seen:
+                            seen.add(rep)
+                            merged_replacements.append(rep)
+                    existing.replacements = merged_replacements
+                    identical = True
+                    break
+
+            if identical:
+                continue
+
+            # Check for partial overlap or containment with any accepted issue
+            has_overlap = False
+            for existing in accepted:
+                # Overlap formula: a.start < b.end and b.start < a.end
+                if issue.start < existing.end and existing.start < issue.end:
+                    has_overlap = True
+                    break
+
+            if not has_overlap:
+                accepted.append(issue.model_copy(deep=True))
+
+        # Sort final accepted issues by start offset ascending
+        accepted.sort(key=lambda x: x.start)
+        return accepted
 
 engine = GrammarEngine()

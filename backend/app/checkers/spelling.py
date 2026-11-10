@@ -8,6 +8,9 @@ from app.schemas import Issue
 WORD_RE = re.compile(r"\b[A-Za-z]+(?:['’][A-Za-z]+)*\b")
 
 class SpellingChecker(Checker):
+    name = "spelling"
+    priority = 100
+
     def __init__(self):
         # Initializing SymSpell with max edit distance of 2
         self.sym_spell = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)

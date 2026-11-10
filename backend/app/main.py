@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas import CheckRequest, CheckResponse
 from app.engine import engine
+from app.offsets import convert_to_utf16_offsets
 
 app = FastAPI(title = "GrammarAI Backend", description = "API for the Grammar Clone project")
 
