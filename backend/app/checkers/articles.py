@@ -3,6 +3,7 @@ import cmudict
 from typing import List
 from app.schemas import Issue
 from app.checkers.base import Checker
+from app.nlp import nlp
 
 def _is_vowel_sound(phoneme: str) -> bool:
     # ARPAbet vowel phonemes end with a stress digit (0, 1, or 2)

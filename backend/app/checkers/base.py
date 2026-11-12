@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from app.schemas import Issue
-from typing import List
 
 class Checker(ABC):
     name: str

@@ -1,0 +1,12 @@
+{
+  "metrics": {
+    "Spelling Only": "\n=========== Span-Based Correction ============\nTP\tFP\tFN\tPrec\tRec\tF0.5\n259\t170\t1321\t0.6037\t0.1639\t0.3929\n==============================================\n\n",
+    "Spelling + Articles": "\n=========== Span-Based Correction ============\nTP\tFP\tFN\tPrec\tRec\tF0.5\n261\t173\t1319\t0.6014\t0.1652\t0.3935\n==============================================\n\n",
+    "ML Only": "\n=========== Span-Based Correction ============\nTP\tFP\tFN\tPrec\tRec\tF0.5\n607\t340\t1193\t0.641\t0.3372\t0.5431\n==============================================\n\n",
+    "Full Engine": "\n=========== Span-Based Correction ============\nTP\tFP\tFN\tPrec\tRec\tF0.5\n713\t449\t1197\t0.6136\t0.3733\t0.5436\n==============================================\n\n"
+  },
+  "latency": {
+    "median_ms": 0.9446144104003906,
+    "p95_ms": 549.066436290741
+  }
+}

@@ -1,12 +1,17 @@
+import logging
 from app.checkers.spelling import SpellingChecker
 from app.checkers.articles import ArticleChecker
+from app.checkers.grammar_ml import GrammarModelChecker
 from app.schemas import Issue
+
+logger = logging.getLogger(__name__)
 
 class GrammarEngine:
     def __init__(self, checkers=None):
         self.checkers = checkers if checkers is not None else [
             SpellingChecker(),
             ArticleChecker(),
+            GrammarModelChecker(),
         ]
     
     def analyze(self, text: str) -> list[Issue]:
@@ -17,7 +22,7 @@ class GrammarEngine:
                 for issue in issues:
                     all_candidates.append((issue, checker.priority))
             except Exception as e:
-                print(f"Checker error in {getattr(checker, 'name', 'unknown')}: {e}")
+                logger.exception("Checker error in %s", getattr(checker, 'name', 'unknown'))
 
         # Sort candidates: highest priority first, then longer span (tiebreaker)
         all_candidates.sort(key=lambda x: (x[1], x[0].end - x[0].start), reverse=True)
