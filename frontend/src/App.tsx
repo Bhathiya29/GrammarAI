@@ -7,8 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const MAX_CHARS = 5000;
 const REPO_URL = '#'; // replace with your GitHub repository link once it is published
 const REPO_IS_LIVE = REPO_URL !== '#';
-const AUTHOR_NAME = ''; // e.g. 'Your Name'. The "Built by" line shows once this is set
-const AUTHOR_URL = ''; // LinkedIn or portfolio link (optional)
+const AUTHOR_NAME = 'Bhathiya Dissanayake'; // e.g. 'Your Name'. The "Built by" line shows once this is set
+const AUTHOR_URL = '"https://linkedin.com/in/bhathiya-dissanayake'; 
 
 const EXAMPLE_TEXT =
   'Hi team, I recieve your mesage yesterday and I think it is a excellent idea. ' +
@@ -22,6 +22,8 @@ const TECH = [
   'TypeScript',
   'Docker',
   'Google Cloud (GCP)',
+  'Cursor',
+  'Claude Code',
   'spaCy',
   'SymSpell',
   'CMUdict',
@@ -273,12 +275,9 @@ function App() {
             Your open-source alternative to <span className="text-emerald-600">Grammarly</span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-md text-base text-slate-600 sm:text-lg">
-            Instant spelling, grammar and punctuation checks as you type.
-          </p>
 
           <p className="mt-7 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            I have shipped this within approx 15 hours with
+            I have shipped this in approx 15 hours with
           </p>
           <div className="mx-auto mt-3 flex max-w-2xl flex-wrap items-center justify-center gap-2">
             {TECH.map((tech) => (

@@ -44,7 +44,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
         <button
           onClick={onDismiss}
           aria-label="Close suggestions"
-          className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-bold text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-bold text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           ✕
         </button>
