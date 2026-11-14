@@ -21,7 +21,7 @@ const TECH = [
   'React',
   'TypeScript',
   'Docker',
-  'Google Cloud (GCP)',
+  'AWS',
   'Cursor',
   'Claude Code',
   'spaCy',
@@ -268,7 +268,7 @@ function App() {
         <section className="pb-8 pt-10 text-center sm:pt-14">
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-xs">
             <span className={`h-2 w-2 rounded-full ${serverDot}`} />
-            Not Vibe Coded, Check Repo (Running Live on GCP)
+            Not Vibe Coded, Check Repo (Running Live on AWS)
           </span>
 
           <h1 className="mx-auto mt-5 max-w-2xl text-4xl font-bold tracking-[-0.03em] text-slate-900 sm:text-5xl sm:leading-[1.08]">
