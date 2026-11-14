@@ -1,0 +1,11 @@
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+eval
+.git
+.env
+*.md
+requirements-dev.txt
+requirements-eval.txt
