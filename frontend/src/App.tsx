@@ -6,7 +6,7 @@ import { CATEGORY_META } from './utils/categories';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const MAX_CHARS = 5000;
 const REPO_URL = 'https://github.com/Bhathiya29/GrammarAI';
-const REPO_IS_LIVE = REPO_URL !== '#';
+//const REPO_IS_LIVE = REPO_URL !== '#';
 const AUTHOR_NAME = 'Bhathiya Dissanayake'; 
 const AUTHOR_URL = 'https://linkedin.com/in/bhathiya-dissanayake'; 
 
