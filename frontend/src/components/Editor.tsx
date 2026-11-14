@@ -19,15 +19,19 @@ const TEXTAREA_CLASSES = `${TEXT_METRICS} w-full min-h-56 text-slate-800 bg-tran
 const OPEN_DELAY_MS = 120; // hover this long before a card opens (stops flicker while sweeping)
 const CLOSE_DELAY_MS = 220; // grace period so the pointer can travel from the word to the card
 const CARD_WIDTH_PX = 288; // keep in sync with w-72 in SuggestionCard
+const CARD_MAX_HEIGHT_PX = 200; // rough upper bound, used to decide whether the card fits below the word
 const CARD_GAP_PX = 6;
+
+type PopoverPos = { top?: number; bottom?: number; left: number };
 
 export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssuesUpdate }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
-  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const [popoverPos, setPopoverPos] = useState<PopoverPos | null>(null);
   const [overIssue, setOverIssue] = useState(false);
+  const [layoutTick, setLayoutTick] = useState(0); // bumped when the visible area changes (keyboard, scroll)
 
   // Tracking the pending caret position after applying a fix
   const pendingCaretRef = useRef<number | null>(null);
@@ -100,6 +104,36 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
     };
   }, []);
 
+  // While a card is open: close it when the user taps or clicks anywhere outside the editor
+  // (the card lives inside the container, so taps on the card itself do not count as outside)
+  useEffect(() => {
+    if (!activeIssueId) return;
+    const onDocumentPointerDown = (e: PointerEvent) => {
+      const container = containerRef.current;
+      if (container && !container.contains(e.target as Node)) {
+        closeNow();
+      }
+    };
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+    return () => document.removeEventListener('pointerdown', onDocumentPointerDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIssueId]);
+
+  // While a card is open: reposition it when the visible area changes (for example when the
+  // on-screen keyboard slides up after tapping the textarea)
+  useEffect(() => {
+    if (!activeIssueId) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const bump = () => setLayoutTick((t) => t + 1);
+    viewport.addEventListener('resize', bump);
+    viewport.addEventListener('scroll', bump);
+    return () => {
+      viewport.removeEventListener('resize', bump);
+      viewport.removeEventListener('scroll', bump);
+    };
+  }, [activeIssueId]);
+
   // Auto-grow textarea height
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -122,7 +156,8 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
   // Finding the active issue object
   const activeIssue = issues.find((i) => i.id === activeIssueId) || null;
 
-  // Positioning the card under the hovered word (layout effect, so it never flashes at the old spot)
+  // Positioning the card next to the word. It goes below the word, or above it when there is
+  // not enough room below in the visible area (which shrinks when the keyboard is open).
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!activeIssue || !container) {
@@ -140,17 +175,25 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
 
     const containerRect = container.getBoundingClientRect();
     const rects = spanEl.getClientRects();
-    const anchor = rects[rects.length - 1] ?? spanEl.getBoundingClientRect();
+    const firstLine = rects[0] ?? spanEl.getBoundingClientRect();
+    const lastLine = rects[rects.length - 1] ?? firstLine;
+
+    const viewport = window.visualViewport;
+    const viewportBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+    const roomBelow = viewportBottom - lastLine.bottom;
+    const placeAbove = roomBelow < CARD_MAX_HEIGHT_PX + CARD_GAP_PX;
 
     // Clamp horizontally so the card never overflows the editor on narrow screens
     const maxLeft = Math.max(0, containerRect.width - CARD_WIDTH_PX);
-    const left = Math.min(Math.max(0, anchor.left - containerRect.left), maxLeft);
+    const left = Math.min(Math.max(0, lastLine.left - containerRect.left), maxLeft);
 
-    setPopoverPos({
-      top: anchor.bottom - containerRect.top + CARD_GAP_PX,
-      left,
-    });
-  }, [activeIssue, text, issues]);
+    if (placeAbove) {
+      // `bottom` is measured from the bottom edge of the container
+      setPopoverPos({ bottom: containerRect.bottom - firstLine.top + CARD_GAP_PX, left });
+    } else {
+      setPopoverPos({ top: lastLine.bottom - containerRect.top + CARD_GAP_PX, left });
+    }
+  }, [activeIssue, text, issues, layoutTick]);
 
   // Mouse / pen hover: hit-test the pointer against the highlighted spans (throttled to one per frame)
   const handlePointerMove = (e: React.PointerEvent<HTMLTextAreaElement>) => {
@@ -174,12 +217,13 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
     });
   };
 
-  // Touch: tap a highlighted word to open its card immediately
+  // Touch: tap a highlighted word to open its card immediately, tap elsewhere in the text to close it
   const handlePointerUp = (e: React.PointerEvent<HTMLTextAreaElement>) => {
     if (e.pointerType !== 'touch') return;
     const root = containerRef.current;
     if (!root) return;
-    const id = issueIdAtPoint(root, e.clientX, e.clientY);
+    // A fingertip is much less precise than a mouse pointer, so give it a bigger target
+    const id = issueIdAtPoint(root, e.clientX, e.clientY, 8);
     if (id) {
       openIssue(id, true);
     } else {
@@ -253,7 +297,9 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
           onChange(e.target.value);
         }}
         onPointerMove={handlePointerMove}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
+          // Touch fires pointerleave right after pointerup, which would close a card we just opened
+          if (e.pointerType === 'touch') return;
           setOverIssue(false);
           scheduleClose();
         }}
@@ -278,8 +324,12 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
             closeNow();
             textareaRef.current?.focus({ preventScroll: true });
           }}
-          onPointerEnter={clearCloseTimer}
-          onPointerLeave={scheduleClose}
+          onPointerEnter={(e) => {
+            if (e.pointerType !== 'touch') clearCloseTimer();
+          }}
+          onPointerLeave={(e) => {
+            if (e.pointerType !== 'touch') scheduleClose();
+          }}
         />
       )}
     </div>

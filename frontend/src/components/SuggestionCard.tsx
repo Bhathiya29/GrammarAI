@@ -4,12 +4,12 @@ import { CATEGORY_META } from '../utils/categories';
 
 interface SuggestionCardProps {
   issue: Issue;
-  position: { top: number; left: number };
+  // Either `top` (card below the word) or `bottom` (card above the word)
+  position: { top?: number; bottom?: number; left: number };
   onApply: (replacement: string) => void;
   onDismiss: () => void;
-  // Used by the editor so the card stays open while the pointer is on it
-  onPointerEnter: () => void;
-  onPointerLeave: () => void;
+  onPointerEnter: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerLeave: (e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 export const SuggestionCard: React.FC<SuggestionCardProps> = ({
@@ -26,8 +26,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
     <div
       role="dialog"
       aria-label={`${meta.label} suggestion`}
-      style={{ top: position.top, left: position.left }}
-      className="card-in absolute z-50 w-72 space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
+      style={{ top: position.top, bottom: position.bottom, left: position.left }}
+      className="card-in absolute z-50 w-72 max-w-[calc(100%-1rem)] space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
       onKeyDown={(e) => {
@@ -44,7 +44,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
         <button
           onClick={onDismiss}
           aria-label="Close suggestions"
-          className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-bold text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="-mr-1 cursor-pointer rounded px-2.5 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:px-1.5 sm:py-0.5"
         >
           ✕
         </button>
@@ -57,10 +57,10 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
       ) : (
         <div className="space-y-1.5">
           <div className="text-xs text-slate-500">
-            Replace <span className="break-all font-semibold text-slate-700">“{issue.original}”</span>{' '}
-            with:
+            Replace{' '}
+            <span className="break-all font-semibold text-slate-700">“{issue.original}”</span> with:
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2 sm:gap-1.5">
             {issue.replacements.map((rep, idx) => {
               const isRemoval = rep === '';
               return (
@@ -71,10 +71,10 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                     e.preventDefault();
                   }}
                   onClick={() => onApply(rep)}
-                  className={`cursor-pointer break-words rounded-lg border px-3 py-1 text-left text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                  className={`cursor-pointer break-words rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:py-1 ${
                     isRemoval
                       ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                      : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200'
+                      : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200'
                   }`}
                 >
                   {isRemoval ? 'Remove' : rep}
