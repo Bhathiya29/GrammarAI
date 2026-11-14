@@ -6,6 +6,7 @@ from app.schemas import Issue
 
 logger = logging.getLogger(__name__)
 
+
 class GrammarEngine:
     def __init__(self, checkers=None):
         self.checkers = checkers if checkers is not None else [
@@ -13,7 +14,21 @@ class GrammarEngine:
             ArticleChecker(),
             GrammarModelChecker(),
         ]
-    
+
+    def warm_up(self) -> None:
+        """Let every checker that needs it (the ML model) load before the first request."""
+        for checker in self.checkers:
+            warm = getattr(checker, "warm_up", None)
+            if callable(warm):
+                try:
+                    warm()
+                except Exception:
+                    logger.exception("Warm-up failed for %s", getattr(checker, "name", "unknown"))
+
+    def is_ready(self) -> bool:
+        """True when every checker that reports a readiness flag is ready."""
+        return all(getattr(checker, "ready", True) for checker in self.checkers)
+
     def analyze(self, text: str) -> list[Issue]:
         all_candidates = []
         for checker in self.checkers:
@@ -21,16 +36,19 @@ class GrammarEngine:
                 issues = checker.check(text)
                 for issue in issues:
                     all_candidates.append((issue, checker.priority))
-            except Exception as e:
-                logger.exception("Checker error in %s", getattr(checker, 'name', 'unknown'))
+            except Exception:
+                logger.exception("Checker error in %s", getattr(checker, "name", "unknown"))
 
-        # Sort candidates: highest priority first, then longer span (tiebreaker)
-        all_candidates.sort(key=lambda x: (x[1], x[0].end - x[0].start), reverse=True)
+        # Highest priority first, then the longer span, then the earlier start (fully deterministic)
+        all_candidates.sort(
+            key=lambda x: (x[1], x[0].end - x[0].start, -x[0].start),
+            reverse=True,
+        )
 
         accepted: list[Issue] = []
 
-        for issue, priority in all_candidates:
-            # Stretch goal: check for identical range merge
+        for issue, _priority in all_candidates:
+            # Identical range: keep the higher-priority issue and merge the suggestions
             identical = False
             for existing in accepted:
                 if existing.start == issue.start and existing.end == issue.end:
@@ -47,7 +65,7 @@ class GrammarEngine:
             if identical:
                 continue
 
-            # Check for partial overlap or containment with any accepted issue
+            # Partial overlap or containment with anything already accepted
             has_overlap = False
             for existing in accepted:
                 # Overlap formula: a.start < b.end and b.start < a.end
@@ -58,8 +76,8 @@ class GrammarEngine:
             if not has_overlap:
                 accepted.append(issue.model_copy(deep=True))
 
-        # Sort final accepted issues by start offset ascending
         accepted.sort(key=lambda x: x.start)
         return accepted
+
 
 engine = GrammarEngine()

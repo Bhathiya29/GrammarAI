@@ -130,7 +130,9 @@ export const Editor: React.FC<EditorProps> = ({ text, onChange, issues, onIssues
       return;
     }
 
-    const spanEl = container.querySelector<HTMLElement>(`[data-issue-id="${activeIssue.id}"]`);
+    const spanEl = container.querySelector<HTMLElement>(
+      `[data-issue-id="${CSS.escape(activeIssue.id)}"]`
+    );
     if (!spanEl) {
       setPopoverPos(null);
       return;
